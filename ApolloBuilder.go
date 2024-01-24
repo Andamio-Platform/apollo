@@ -1421,6 +1421,22 @@ func (a *Apollo) SetWalletFromKeypair(vkey string, skey string, network constant
 /*
 *
 
+	Set the wallet for the Apollo transaction using an address type.
+
+	Params:
+		address: The address to use as the wallet.
+
+	Returns:
+		*Apollo: A pointer to the Apollo object with the wallet set.
+*/
+func (a *Apollo) SetWalletFromAddress(address Address.Address) *Apollo {
+	a.wallet = &apollotypes.ExternalWallet{Address: address}
+	return a
+}
+
+/*
+*
+
 	Set the wallet for the Apollo transaction using a Bech32 address.
 
 	Params:

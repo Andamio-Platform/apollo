@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/Salvionied/apollo/serialization"
 	"github.com/Salvionied/apollo/serialization/Address"
@@ -279,6 +280,26 @@ func MarshalPlutus(v interface{}) (*PlutusData.PlutusData, error) {
 			constr := uint64(0)
 			typeOfField := tag.Get("plutusType")
 			constrOfField := tag.Get("plutusConstr")
+
+			if typeOfField == "Ignore" {
+				continue
+			}
+
+			if len(typeOfField) > 1 {
+				omitempty := false
+				for _, part := range strings.Split(typeOfField, ",") {
+					switch strings.ToLower(strings.TrimSpace(part)) {
+					case "omitempty":
+						if reflect.DeepEqual(values.Field(i).Interface(), reflect.Zero(f.Type).Interface()) {
+							omitempty = true
+						}
+					}
+				}
+				if omitempty {
+					continue
+				}
+			}
+
 			if constrOfField != "" {
 				parsedConstr, err := strconv.Atoi(constrOfField)
 				if err != nil {
@@ -313,13 +334,41 @@ func MarshalPlutus(v interface{}) (*PlutusData.PlutusData, error) {
 					}
 				}
 			case "Int":
-				if values.Field(i).Kind() != reflect.Int64 {
-					return nil, fmt.Errorf("error: Int field is not int64")
+				if values.Field(i).Kind() != reflect.Int64 && values.Field(i).Kind() != reflect.Int32 && values.Field(i).Kind() != reflect.Int16 && values.Field(i).Kind() != reflect.Int8 && values.Field(i).Kind() != reflect.Int {
+					return nil, fmt.Errorf("error: Int field is not int")
 				}
-				pdi := PlutusData.PlutusData{
-					PlutusDataType: PlutusData.PlutusInt,
-					Value:          values.Field(i).Interface().(int64),
-					TagNr:          constr,
+				var pdi PlutusData.PlutusData
+				switch values.Field(i).Kind() {
+				case reflect.Int64:
+					pdi = PlutusData.PlutusData{
+						PlutusDataType: PlutusData.PlutusInt,
+						Value:          values.Field(i).Interface().(int64),
+						TagNr:          constr,
+					}
+				case reflect.Int32:
+					pdi = PlutusData.PlutusData{
+						PlutusDataType: PlutusData.PlutusInt,
+						Value:          values.Field(i).Interface().(int32),
+						TagNr:          constr,
+					}
+				case reflect.Int16:
+					pdi = PlutusData.PlutusData{
+						PlutusDataType: PlutusData.PlutusInt,
+						Value:          values.Field(i).Interface().(int16),
+						TagNr:          constr,
+					}
+				case reflect.Int8:
+					pdi = PlutusData.PlutusData{
+						PlutusDataType: PlutusData.PlutusInt,
+						Value:          values.Field(i).Interface().(int8),
+						TagNr:          constr,
+					}
+				case reflect.Int:
+					pdi = PlutusData.PlutusData{
+						PlutusDataType: PlutusData.PlutusInt,
+						Value:          values.Field(i).Interface().(int),
+						TagNr:          constr,
+					}
 				}
 				if isMap {
 					nameBytes := serialization.NewCustomBytes(name)
